@@ -21,7 +21,6 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
   bool _favoritesFilter = false;
   bool _yourCardsFilter = false;
   bool _featuredFilter = false;
-  bool _openNowFilter = false;
   List<dynamic> _categories = [];
   List<dynamic> _banks = [];
 
@@ -37,9 +36,12 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
   Future<void> _fetchBanks() async {
     try {
       final api = ApiClient();
-      final response = await api.client.get('/config'); // Assuming config or a new /banks endpoint
-      // Adjusting since we don't have /banks, maybe just fetch from configurations?
-      // Actually, I'll just skip bank fetch if no endpoint exists, or assume /cards/available has banks
+      final response = await api.client.get('/config');
+      if (response.data['banks'] != null) {
+        setState(() {
+          _banks = response.data['banks'];
+        });
+      }
     } catch (_) {}
   }
 
@@ -84,6 +86,13 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to global location changes
+    ref.listen(selectedLocationProvider, (previous, next) {
+      if (previous != next) {
+        _fetchOffers();
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -134,13 +143,21 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                 _buildToggleFilterChip('Featured', icon: Icons.sell_outlined, isActive: _featuredFilter, onTap: () {
                   setState(() { _featuredFilter = !_featuredFilter; _fetchOffers(); });
                 }),
-                _buildToggleFilterChip('Open Now', icon: Icons.access_time, isActive: _openNowFilter, onTap: () {
-                  setState(() { _openNowFilter = !_openNowFilter; _fetchOffers(); });
-                }),
-                if (_selectedBank != null)
-                  _buildFilterChip('Bank: ${_selectedBank == '1' ? 'HBL' : 'MCB'}', icon: Icons.account_balance, isRemovable: true, onRemove: () {
-                    setState(() { _selectedBank = null; _fetchOffers(); });
-                  }),
+                
+                // Bank Filter
+                 _buildFilterChip(
+                    _selectedBank != null 
+                        ? 'Bank: ${_banks.firstWhere((b) => b['id'].toString() == _selectedBank, orElse: () => {'name': 'Selected'})['name']}' 
+                        : 'Bank', 
+                    icon: Icons.account_balance, 
+                    hasDropdown: _selectedBank == null,
+                    isActive: _selectedBank != null,
+                    isRemovable: _selectedBank != null, 
+                    onTap: () => _showBankSelector(),
+                    onRemove: () {
+                      setState(() { _selectedBank = null; _fetchOffers(); });
+                    }
+                 ),
               ],
             ),
           ),
@@ -199,37 +216,79 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, {IconData? icon, bool hasDropdown = false, bool isRemovable = false, VoidCallback? onRemove}) {
-    return Container(
+  void _showBankSelector() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               const Text('Select Bank', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+               const SizedBox(height: 16),
+               Container(
+                 constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
+                 child: ListView.builder(
+                   shrinkWrap: true,
+                   itemCount: _banks.length,
+                   itemBuilder: (context, index) {
+                     final bank = _banks[index];
+                     return ListTile(
+                       title: Text(bank['name']),
+                       onTap: () {
+                         setState(() {
+                           _selectedBank = bank['id'].toString();
+                           _fetchOffers();
+                         });
+                         Navigator.pop(context);
+                       },
+                     );
+                   },
+                 ),
+               )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChip(String label, {IconData? icon, bool hasDropdown = false, bool isRemovable = false, bool isActive = false, VoidCallback? onRemove, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isActive ? Colors.indigo.withOpacity(0.1) : Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: isActive ? Colors.indigo : Colors.grey[300]!),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 16, color: Colors.grey[700]),
+            Icon(icon, size: 16, color: isActive ? Colors.indigo : Colors.grey[700]),
             const SizedBox(width: 6),
           ],
-          Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isActive ? Colors.indigo : Colors.black)),
           if (hasDropdown) ...[
             const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down, size: 16),
+             Icon(Icons.keyboard_arrow_down, size: 16, color: isActive ? Colors.indigo : Colors.grey[700]),
           ],
           if (isRemovable) ...[
             const SizedBox(width: 4),
             GestureDetector(
               onTap: onRemove,
-              child: const Icon(Icons.close, size: 16),
+              child: Icon(Icons.close, size: 16, color: isActive ? Colors.indigo : Colors.grey[700]),
             ),
           ],
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildOfferGridCard(dynamic offer) {

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'location_provider.dart';
 
 class LocationSelectorDialog extends ConsumerStatefulWidget {
@@ -101,7 +101,7 @@ class _LocationSelectorDialogState extends ConsumerState<LocationSelectorDialog>
             ),
             trailing: isSelected ? const Icon(Icons.check_circle, color: Color(0xFF4F46E5)) : null,
             onTap: () {
-              ref.read(selectedLocationProvider.notifier).state = location;
+              ref.read(selectedLocationProvider.notifier).selectLocation(location);
               Navigator.pop(context);
             },
           );

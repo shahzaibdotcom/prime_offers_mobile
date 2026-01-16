@@ -40,6 +40,12 @@ class ApiClient {
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+        
+        final locationId = prefs.getInt('selected_location_id');
+        if (locationId != null) {
+          options.headers['X-Location-Id'] = locationId;
+        }
+
         return handler.next(options);
       },
       onError: (DioException e, handler) {
