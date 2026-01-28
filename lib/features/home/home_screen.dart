@@ -246,7 +246,7 @@ class HomeScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16),
                   child: item['icon'] != null
                       ? Image.network(
-                          item['icon'],
+                          ApiClient.getImageUrl(item['icon']),
                           fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => const Icon(Icons.category, color: Colors.indigo),
                         )

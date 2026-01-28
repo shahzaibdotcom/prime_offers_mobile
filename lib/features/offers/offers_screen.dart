@@ -168,20 +168,14 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _offers.isEmpty
                     ? _buildEmptyState()
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.75,
-                        ),
-                        itemCount: _offers.length,
-                        itemBuilder: (context, index) {
-                          final offer = _offers[index];
-                          return _buildOfferGridCard(offer);
-                        },
-                      ),
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _offers.length,
+                      itemBuilder: (context, index) {
+                        final offer = _offers[index];
+                        return _buildOfferListCard(offer);
+                      },
+                    ),
           ),
         ],
       ),
@@ -291,128 +285,157 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     ));
   }
 
-  Widget _buildOfferGridCard(dynamic offer) {
+  Widget _buildOfferListCard(dynamic offer) {
     return GestureDetector(
       onTap: () => context.push('/offer/${offer['id']}'),
       child: Container(
+        margin: const EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 15,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Section with Badges
-            Expanded(
-              flex: 3,
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            // Top Image Section
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: AspectRatio(
+                    aspectRatio: 16/9,
                     child: Image.network(
-                      ApiClient.getImageUrl(offer['company']['logo']), // Using logo as fallback or actual offer image
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: Colors.grey[100]),
+                       ApiClient.getImageUrl(offer['image'] ?? offer['company']['cover_image'] ?? offer['company']['logo']),
+                       fit: BoxFit.cover,
+                       errorBuilder: (_, __, ___) => Container(color: Colors.grey[200]),
                     ),
                   ),
-                  // Rating Badge
-                  Positioned(
-                    bottom: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text('4.2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)), // Mocked rating
-                          const SizedBox(width: 2),
-                          Icon(Icons.star, color: Colors.yellow[700], size: 10),
-                        ],
-                      ),
-                    ),
+                ),
+                // Featured Heart (Top Right)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.favorite_border, color: Colors.grey[600], size: 20),
                   ),
-                  // Open Now Badge
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
+                ),
+                // Rating Badge (Bottom Left)
+                 Positioned(
+                  bottom: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF66B93F), // Greenish
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     child: Row(
                       children: [
-                        const Icon(Icons.access_time, color: Colors.white, size: 12),
-                        const SizedBox(width: 2),
-                        const Text('Open Now', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                         const Text('3.8', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                         const SizedBox(width: 2),
+                         const Icon(Icons.star, size: 12, color: Colors.white),
                       ],
                     ),
                   ),
-                  // Favorite Icon
-                  const Positioned(
-                    top: 8,
-                    right: 8,
-                    child: CircleAvatar(
-                      radius: 14,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.favorite_border, color: Colors.grey, size: 16),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Details Section
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                ),
+                // Open Now (Bottom Right)
+                 const Positioned(
+                  bottom: 12,
+                  right: 12,
+                  child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Colors.grey[100],
-                        backgroundImage: NetworkImage(ApiClient.getImageUrl(offer['company']['logo'])),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          offer['company']['name'],
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFC0392B),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text('Up to', style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)),
-                            Text('${offer['discount_value']}%', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
-                          ],
-                        ),
-                      ),
+                       Icon(Icons.access_time, color: Colors.white, size: 14),
+                       SizedBox(width: 4),
+                       Text('Open Now', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12, shadows: [Shadow(blurRadius: 2, color: Colors.black45, offset: Offset(0,1))])),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '2 Branches • 5 Card Offers', // Mocked details
-                    style: TextStyle(color: Colors.grey[500], fontSize: 10),
-                  ),
+                ),
+              ],
+            ),
+            
+            // Bottom Content Section
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                   // Logo
+                   Container(
+                     width: 48,
+                     height: 48,
+                     decoration: BoxDecoration(
+                       color: Colors.black,
+                       borderRadius: BorderRadius.circular(8),
+                       image: offer['company']['logo'] != null ? DecorationImage(
+                         image: NetworkImage(ApiClient.getImageUrl(offer['company']['logo'])),
+                         fit: BoxFit.cover,
+                       ) : null
+                     ),
+                   ),
+                   const SizedBox(width: 12),
+                   // Text Info
+                   Expanded(
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(
+                           offer['company']['name'],
+                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                           maxLines: 1,
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                         const SizedBox(height: 4),
+                         // Categories
+                         if (offer['categories'] != null && (offer['categories'] as List).isNotEmpty)
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: (offer['categories'] as List).take(3).map<Widget>((cat) => Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: Text(
+                                    cat['name'],
+                                    style: TextStyle(color: Colors.grey[600], fontSize: 10,  fontWeight: FontWeight.w500),
+                                  ),
+                                )).toList(),
+                              ),
+                            )
+                         else 
+                           Text(
+                             offer['category'] != null ? offer['category']['name'] : 'Mixed',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                           ),
+                         const SizedBox(height: 4),
+                         Text(
+                           '${_getBranchText(offer)} • ${_getCardText(offer)}',
+                           style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                         ),
+                       ],
+                     ),
+                   ),
+                   // Discount Badge
+                   Container(
+                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                     decoration: const BoxDecoration(
+                       color: Color(0xFF8B0000), // Dark Red
+                       borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(12), topRight: Radius.circular(4), bottomLeft: Radius.circular(4)),
+                     ),
+                     child: Column(
+                       children: [
+                         Text('Up to', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 8)),
+                         Text(_getDiscountText(offer), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                       ],
+                     ),
+                   )
                 ],
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -460,5 +483,40 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
         ),
       ),
     );
+  }
+
+
+  String _getBranchText(dynamic offer) {
+    final count = (offer['branches'] as List?)?.length ?? 1;
+    return '$count Branch${count != 1 ? 'es' : ''}';
+  }
+
+  String _getCardText(dynamic offer) {
+    final count = (offer['cards'] as List?)?.length ?? 0;
+    return count > 0 ? '$count Card Offer${count != 1 ? 's' : ''}' : 'All Cards';
+  }
+
+  String _getDiscountText(dynamic offer) {
+     double maxDiscount = double.tryParse(offer['discount_value'].toString()) ?? 0.0;
+     String type = offer['discount_type'] ?? 'percentage';
+
+     if (offer['cards'] != null) {
+       for (var card in offer['cards']) {
+         if (card['pivot'] != null && card['pivot']['discount_value'] != null) {
+            double val = double.tryParse(card['pivot']['discount_value'].toString()) ?? 0.0;
+            if (val > maxDiscount) {
+              maxDiscount = val;
+              type = card['pivot']['discount_type'] ?? type;
+            }
+         }
+       }
+     }
+     
+     if (type == 'percentage') {
+       return '${maxDiscount.toStringAsFixed(0)}%';
+     } else if (type == 'flat') {
+       return 'PKR ${maxDiscount.toStringAsFixed(0)}';
+     }
+     return '${maxDiscount.toStringAsFixed(0)}%';
   }
 }
